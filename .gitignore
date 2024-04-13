@@ -4,3 +4,5 @@ datasets/
 # Virtual envs 
 .venv
 venv
+
+.vscode
