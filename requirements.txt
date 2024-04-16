@@ -4,3 +4,5 @@ pillow
 pandas
 datasets
 numpy
+seaborn
+scikit-image
