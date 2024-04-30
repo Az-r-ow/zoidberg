@@ -1,5 +1,10 @@
 .DS_Store
-datasets/
+datasets
+
+# Generated forlders by python setup.py install 
+dist
+build
+zoidberg.egg-info
 
 # Virtual envs 
 .venv
