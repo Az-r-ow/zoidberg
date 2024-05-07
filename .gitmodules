@@ -1,0 +1,3 @@
+[submodule "libs/NeuralNet"]
+	path = libs/NeuralNet
+	url = https://github.com/Az-r-ow/NeuralNet.git
