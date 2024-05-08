@@ -1,8 +1,23 @@
-from setuptools import setup, find_packages
-import os 
+from setuptools import setup, find_packages, Extension
+import os, shutil
+from utils.files import find_file
 
 with open('requirements.txt') as f:
     required = f.read().splitlines()
+
+neuralNet_build_folder = "libs/NeuralNet/build"
+utils_folder = "./utils"
+dir_path = os.path.dirname(os.path.realpath(__file__))
+neuralNet_so_file = find_file(".so", utils_folder)
+
+# Check for neural net so file otherwise compile it 
+if not os.path.exists(neuralNet_build_folder) or not neuralNet_so_file:
+  os.chdir('libs/NeuralNet')
+  os.system('git submodule init && git submodule update')
+  os.system('source ./scripts/build_without_tests.sh')
+  os.chdir(dir_path)
+  neuralNet_so_file = find_file(".so", neuralNet_build_folder)
+  shutil.move(neuralNet_so_file, utils_folder)
 
 setup(
   name='zoidberg',
