@@ -16,6 +16,7 @@ if not os.path.exists(neuralNet_build_folder) or not neuralNet_so_file:
   os.system('git submodule init && git submodule update')
   os.system('source ./scripts/build_without_tests.sh')
   os.chdir(dir_path)
+  # move the .so file to utils 
   neuralNet_so_file = find_file(".so", neuralNet_build_folder)
   shutil.move(neuralNet_so_file, utils_folder)
 
