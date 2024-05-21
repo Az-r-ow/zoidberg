@@ -15,4 +15,4 @@ todo.md
 __pycache__
 *.so
 checkpoints/
-training.csv
+*.csv
