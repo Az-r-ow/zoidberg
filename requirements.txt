@@ -9,3 +9,4 @@ scikit-image
 ipympl
 plotly
 tensorflow
+opencv-python
