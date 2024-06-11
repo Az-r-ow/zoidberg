@@ -3,6 +3,8 @@ from io import BytesIO
 from matplotlib import pyplot as plt
 import matplotlib.patches as patches
 import pandas as pd
+import numpy as np
+import cv2
 
 
 def format_dataset(dataset, labels):
@@ -18,6 +20,7 @@ def resize_grayscale(img, size=(500, 500)):
     grayscale = img.convert("L")
     resized_img = grayscale.resize(size)
     return resized_img
+
 
 def get_center_crop_coord(image, target_size=(100, 100)):
     """
@@ -85,3 +88,41 @@ def display_images(
         ax.axis("off")
 
     plt.show()
+
+
+def generate_mask(image_shape):
+    """
+    This function is the result of the analysis done in : image_mask.ipynb
+    """
+    height, width = image_shape[:2]
+
+    # Fixed offsets
+    sideoffset = 7
+    topoffset = 6
+
+    # Define the points for an image of size (100, 100)
+    original_points = np.array(
+        [
+            [32, topoffset],
+            [11, 28],
+            [sideoffset, 100],
+            [100 - sideoffset, 100],
+            [100 - 11, 28],
+            [67, topoffset],
+        ],
+        np.int32,
+    )
+
+    # Scale the points to the new image size
+    scale_x = width / 100
+    scale_y = height / 100
+    scaled_points = original_points * [scale_x, scale_y]
+
+    # Reshape the points for cv2.fillPoly
+    scaled_points = scaled_points.reshape((-1, 1, 2))
+
+    # Create a mask
+    mask = np.zeros((height, width), dtype=np.uint8)
+    cv2.fillPoly(mask, [scaled_points.astype(np.int32)], color=1)
+
+    return mask
