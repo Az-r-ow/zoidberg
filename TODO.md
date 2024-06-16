@@ -1,0 +1,3 @@
+- [ ] Justify using the images sizes that we're using based off of some article about CNN
+- [ ] Checkout : https://arxiv.org/pdf/1409.1556
+- [ ] Use the same CNN architecture of the one used for medical purpose
