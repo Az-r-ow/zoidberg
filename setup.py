@@ -6,7 +6,7 @@ with open('requirements.txt') as f:
     required = f.read().splitlines()
 
 neuralNet_build_folder = "libs/NeuralNet/build"
-utils_folder = "./utils"
+utils_folder = "./src/utils"
 dir_path = os.path.dirname(os.path.realpath(__file__))
 neuralNet_so_file = find_file(".so", utils_folder)
 
