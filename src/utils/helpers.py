@@ -2,6 +2,7 @@ from PIL import Image
 from io import BytesIO
 from matplotlib import pyplot as plt
 import matplotlib.patches as patches
+import seaborn as sns
 import pandas as pd
 import numpy as np
 import cv2
@@ -126,3 +127,61 @@ def generate_mask(image_shape):
     cv2.fillPoly(mask, [scaled_points.astype(np.int32)], color=1)
 
     return mask
+
+
+def plot_confusion_matrix(cm, model_name):
+    sns.heatmap(cm, annot=True, fmt="d", cmap="Blues")
+    plt.title(f"Confusion Matrix of {model_name}")
+    plt.xlabel("Predicted Labels")
+    plt.ylabel("True Labels")
+    plt.show()
+
+
+def generate_values_around_median(median, num_elements):
+    # Calculate the half-size of the sequence
+    half_size = num_elements // 2
+
+    # Generate the sequence around the median
+    sequence = np.arange(median - half_size, median + half_size + 1)
+
+    return sequence
+
+
+def plot_models_scores(model_scores):
+    average_model_scores = {
+        model: {
+            metric: (np.mean(scores) if isinstance(scores, np.ndarray) else scores)
+            for metric, scores in metrics.items()
+        }
+        for model, metrics in model_scores.items()
+    }
+
+    metrics = list(next(iter(average_model_scores.values())).keys())
+
+    # Get the number of models
+    num_models = len(average_model_scores)
+    num_metrics = len(metrics)
+
+    # Generate a list of colors
+    colors = plt.cm.tab10(np.linspace(0, 1, num_models))
+
+    fig, ax = plt.subplots()
+    index = np.arange(num_metrics) * num_models * 1.5
+
+    for j, metric in enumerate(metrics):
+        medians = generate_values_around_median(index[j], num_models)
+        for i, (model, scores) in enumerate(average_model_scores.items()):
+            ax.bar(medians[i], scores[metric], color=colors[i])
+            ax.text(
+                medians[i],
+                scores[metric] + 0.01,
+                f"{scores[metric]:.3f}",
+                ha="center",
+                va="bottom",
+                rotation=-45,
+            )
+
+    ax.set_xticks(index)
+    ax.set_xticklabels(metrics)
+    plt.legend(list(average_model_scores.keys()), loc="lower center")
+    plt.show()
