@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages, Extension
 import os, shutil
-from utils.files import find_file
+from src.utils.files import find_file
 
 with open('requirements.txt') as f:
     required = f.read().splitlines()
