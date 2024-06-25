@@ -1,0 +1,20 @@
+name: zoidberg
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - numpy=1.26
+  - tensorflow-gpu=2.4.1
+  - notebook=7.2.1
+  - pip
+  - pip:
+    - matplotlib
+    - scikit-learn
+    - pillow
+    - pandas
+    - datasets
+    - seaborn
+    - scikit-image
+    - ipympl
+    - plotly
+    - opencv-python
