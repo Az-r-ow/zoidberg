@@ -3,8 +3,9 @@ channels:
   - defaults
   - conda-forge
 dependencies:
+  - python=3.10
   - numpy=1.26
-  - tensorflow-gpu=2.4.1
+  - tensorflow-gpu
   - notebook=7.2.1
   - pip
   - pip:
@@ -18,3 +19,4 @@ dependencies:
     - ipympl
     - plotly
     - opencv-python
+    - scipy
