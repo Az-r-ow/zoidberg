@@ -1,10 +1,19 @@
 from PIL import Image
 from io import BytesIO
+from .NeuralNetPy import TrainingData2dI
 from matplotlib import pyplot as plt
 import matplotlib.patches as patches
 import seaborn as sns
 import pandas as pd
 import numpy as np
+from sklearn.metrics import (
+    confusion_matrix,
+    accuracy_score,
+    roc_auc_score,
+    recall_score,
+)
+import csv
+import os
 import cv2
 
 
@@ -185,3 +194,43 @@ def plot_models_scores(model_scores):
     ax.set_xticklabels(metrics)
     plt.legend(list(average_model_scores.keys()), loc="lower center")
     plt.show()
+
+def train_evaluate_model(model, model_name="NeuralNetPy", epochs=10, callbacks=[], csv_file="networks-results.csv"):
+    preprocessed_data = np.load("./datasets/processed_data.npz", allow_pickle=True)
+    y_train = preprocessed_data['y_train']
+    y_test = preprocessed_data['y_test']
+    x_train_pca = np.load("./datasets/x_train_pca.npy")
+    x_test_pca = np.load("./datasets/x_test_pca.npy")
+    print(x_train_pca.shape)
+    train_data = TrainingData2dI(x_train_pca, y_train)
+    train_data.batch(128)
+    model.train(train_data, epochs, callbacks)
+    y_pred = model.predict(x_test_pca)
+    y_pred = np.argmax(y_pred, axis=1)
+    headers = ["model_name", "accuracy", "roc_auc", "recall"]
+    try:
+        with open(csv_file, mode="x") as file: 
+            file.write("")
+    except FileExistsError:
+        print(f"File {csv_file} already exists")
+    with open(csv_file, mode="r") as file:
+        reader = csv.reader(file)
+        first_row = next(reader, None)
+        if not first_row or not any(first_row):
+            with open(csv_file, mode="w") as w_file:
+                writer = csv.writer(w_file)
+                writer.writerow(headers)
+    with open(csv_file, mode="a") as file:
+        print(f"Writing scores for {model_name}...")
+        writer = csv.DictWriter(file, fieldnames=headers)
+        writer.writerow({
+            "model_name": model_name,
+            "accuracy": round(accuracy_score(y_test, y_pred), 3),
+            "roc_auc": round(roc_auc_score(y_test, y_pred), 3),
+            "recall": round(recall_score(y_test, y_pred), 3)
+        })
+        
+        
+def filename_without_ext(filename):
+    return os.path.splitext(os.path.basename(filename))[0]
+    
