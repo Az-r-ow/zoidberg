@@ -7,6 +7,7 @@ dependencies:
   - numpy=1.26
   - tensorflow-gpu
   - notebook=7.2.1
+  - pydot=1.4 # for tf.keras.utils.plot_model()
   - pip
   - pip:
     - matplotlib
@@ -20,3 +21,4 @@ dependencies:
     - plotly
     - opencv-python
     - scipy
+    - tensorflow~=2.14.0
