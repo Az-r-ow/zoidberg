@@ -1,6 +1,6 @@
 from PIL import Image
 from io import BytesIO
-from .NeuralNetPy import TrainingData2dI
+from .NeuralNetPy import TrainingData2dI, callbacks
 from matplotlib import pyplot as plt
 import matplotlib.patches as patches
 import seaborn as sns
@@ -8,10 +8,12 @@ import pandas as pd
 import numpy as np
 from sklearn.metrics import (
     confusion_matrix,
+    ConfusionMatrixDisplay,
     accuracy_score,
     roc_auc_score,
     recall_score,
 )
+from sklearn.model_selection import train_test_split
 import csv
 import os
 import cv2
@@ -195,42 +197,131 @@ def plot_models_scores(model_scores):
     plt.legend(list(average_model_scores.keys()), loc="lower center")
     plt.show()
 
-def train_evaluate_model(model, model_name="NeuralNetPy", epochs=10, callbacks=[], csv_file="networks-results.csv"):
+
+def train_evaluate_model(
+    model,
+    model_name="NeuralNetPy",
+    epochs=10,
+    callbacksList=[],
+    stratified=False,
+    shuffle=False,
+    dropLast=False,
+    verbose=False,
+):
+    # Load data
     preprocessed_data = np.load("./datasets/processed_data.npz", allow_pickle=True)
-    y_train = preprocessed_data['y_train']
-    y_test = preprocessed_data['y_test']
+    y_train = preprocessed_data["y_train"]
+    y_eval = preprocessed_data["y_test"]
     x_train_pca = np.load("./datasets/x_train_pca.npy")
-    x_test_pca = np.load("./datasets/x_test_pca.npy")
-    print(x_train_pca.shape)
-    train_data = TrainingData2dI(x_train_pca, y_train)
-    train_data.batch(128)
-    model.train(train_data, epochs, callbacks)
-    y_pred = model.predict(x_test_pca)
+    x_eval_pca = np.load("./datasets/x_test_pca.npy")
+
+    # Split the data 90-10 with stratification
+    x_train_pca, x_test_pca, y_train, y_test = train_test_split(
+        x_train_pca, y_train, test_size=0.1, stratify=y_train, random_state=42
+    )
+
+    # Create a 2d TrainingData object
+    train_data = TrainingData2dI(x_train_pca, y_train, x_test_pca, y_test)
+
+    # Mini-batch the data
+    train_data.batch(128, stratified, shuffle, dropLast, verbose)
+
+    logs_filename = f"{model_name}.csv"
+    # Add a csv logger to track the progress during training
+    callbacksList.append(callbacks.CSVLogger(logs_filename))
+
+    # Train the model
+    if verbose:
+        print("Training model")
+    model.train(train_data, epochs, callbacksList, progBar=False)
+
+    training_logs = pd.read_csv(logs_filename)
+
+    # convert epochs to ints
+    training_logs["EPOCH"] = training_logs["EPOCH"].astype("int32")
+
+    y_pred = model.predict(x_eval_pca)
     y_pred = np.argmax(y_pred, axis=1)
-    headers = ["model_name", "accuracy", "roc_auc", "recall"]
-    try:
-        with open(csv_file, mode="x") as file: 
-            file.write("")
-    except FileExistsError:
-        print(f"File {csv_file} already exists")
-    with open(csv_file, mode="r") as file:
-        reader = csv.reader(file)
-        first_row = next(reader, None)
-        if not first_row or not any(first_row):
-            with open(csv_file, mode="w") as w_file:
-                writer = csv.writer(w_file)
-                writer.writerow(headers)
-    with open(csv_file, mode="a") as file:
-        print(f"Writing scores for {model_name}...")
-        writer = csv.DictWriter(file, fieldnames=headers)
-        writer.writerow({
-            "model_name": model_name,
-            "accuracy": round(accuracy_score(y_test, y_pred), 3),
-            "roc_auc": round(roc_auc_score(y_test, y_pred), 3),
-            "recall": round(recall_score(y_test, y_pred), 3)
-        })
-        
-        
+
+    # Create a figure with 4 subplots
+    fig, axs = plt.subplots(2, 2, figsize=(10, 8))
+
+    # First plot will have a comparison between train and test losses over the epochs
+    epochs = training_logs["EPOCH"].to_numpy()
+    train_loss = training_logs["LOSS"].to_numpy()
+    test_loss = training_logs["TEST_LOSS"].to_numpy()
+
+    axs[0, 0].plot(epochs, train_loss, color="red", label="train_loss")
+    axs[0, 0].plot(epochs, test_loss, color="blue", label="test_loss")
+    axs[0, 0].set_xlabel("epochs")
+    axs[0, 0].set_ylabel("loss")
+    axs[0, 0].legend()
+
+    # Second plot will have a comparison between train and test accuracy
+    train_accuracy = training_logs["ACCURACY"].to_numpy()
+    test_accuracy = training_logs["TEST_ACCURACY"].to_numpy()
+
+    axs[0, 1].plot(epochs, train_accuracy, color="red", label="train_accuracy")
+    axs[0, 1].plot(epochs, test_accuracy, color="blue", label="test_accuracy")
+    axs[0, 1].set_xlabel("epochs")
+    axs[0, 1].set_ylabel("accuracy")
+    axs[0, 1].legend()
+    # Third plot will have a confusion matrix on the eval set
+    cm = confusion_matrix(y_eval, y_pred)
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm)
+    disp.plot(ax=axs[1, 0])
+
+    # Fourth plot will have bars for each score on the eval predictions
+    eval_scores = {
+        "eval_accuracy": accuracy_score(y_eval, y_pred),
+        "eval_roc_auc": roc_auc_score(y_eval, y_pred),
+        "eval_recall": recall_score(y_eval, y_pred),
+    }
+
+    idx = 1
+    for score in eval_scores:
+        axs[1, 1].bar(idx, eval_scores[score], label=score)
+        axs[1, 1].text(
+            idx,
+            eval_scores[score] + 0.01,
+            f"{eval_scores[score]:.3f}",
+            ha="center",
+            rotation=-45,
+        )
+        idx += 2
+    axs[1, 1].legend(loc="lower right")
+    # plt.legend()
+    plt.show()
+
+    return model
+
+    # y_pred = model.predict(x_test_pca)
+    # y_pred = np.argmax(y_pred, axis=1)
+    # headers = ["model_name", "accuracy", "roc_auc", "recall"]
+    # try:
+    #     with open(csv_file, mode="x") as file:
+    #         file.write("")
+    # except FileExistsError:
+    #     print(f"File {csv_file} already exists")
+    # with open(csv_file, mode="r") as file:
+    #     reader = csv.reader(file)
+    #     first_row = next(reader, None)
+    #     if not first_row or not any(first_row):
+    #         with open(csv_file, mode="w") as w_file:
+    #             writer = csv.writer(w_file)
+    #             writer.writerow(headers)
+    # with open(csv_file, mode="a") as file:
+    #     print(f"Writing scores for {model_name}...")
+    #     writer = csv.DictWriter(file, fieldnames=headers)
+    #     writer.writerow(
+    #         {
+    #             "model_name": model_name,
+    #             "accuracy": round(accuracy_score(y_test, y_pred), 3),
+    #             "roc_auc": round(roc_auc_score(y_test, y_pred), 3),
+    #             "recall": round(recall_score(y_test, y_pred), 3),
+    #         }
+    #     )
+
+
 def filename_without_ext(filename):
     return os.path.splitext(os.path.basename(filename))[0]
-    
