@@ -202,6 +202,7 @@ def train_evaluate_model(
     model,
     model_name="NeuralNetPy",
     epochs=10,
+    preprocessing_pipeline=None,
     callbacksList=[],
     stratified=False,
     shuffle=False,
@@ -214,12 +215,16 @@ def train_evaluate_model(
     y_eval = preprocessed_data["y_test"]
     x_train_pca = np.load("./datasets/x_train_pca.npy")
     x_eval_pca = np.load("./datasets/x_test_pca.npy")
+    
+    if preprocessing_pipeline:
+        x_train_pca = preprocessing_pipeline.fit_transform(x_train_pca)
+        x_eval_pca = preprocessing_pipeline.transform(x_eval_pca)
 
     # Split the data 90-10 with stratification
     x_train_pca, x_test_pca, y_train, y_test = train_test_split(
         x_train_pca, y_train, test_size=0.1, stratify=y_train, random_state=42
     )
-
+    
     # Create a 2d TrainingData object
     train_data = TrainingData2dI(x_train_pca, y_train, x_test_pca, y_test)
 
