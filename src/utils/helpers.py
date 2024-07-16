@@ -14,6 +14,10 @@ from sklearn.metrics import (
     recall_score,
 )
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MaxAbsScaler
+from tensorflow.keras.models import Sequential, Model
+
+
 import csv
 import os
 import cv2
@@ -215,16 +219,18 @@ def train_evaluate_model(
     y_eval = preprocessed_data["y_test"]
     x_train_pca = np.load("./datasets/x_train_pca.npy")
     x_eval_pca = np.load("./datasets/x_test_pca.npy")
-    
+
     if preprocessing_pipeline:
         x_train_pca = preprocessing_pipeline.fit_transform(x_train_pca)
         x_eval_pca = preprocessing_pipeline.transform(x_eval_pca)
-
+    else:
+        x_train_pca = MaxAbsScaler().fit_transform(x_train_pca)
+        x_eval_pca = MaxAbsScaler().fit_transform(x_eval_pca)
     # Split the data 90-10 with stratification
     x_train_pca, x_test_pca, y_train, y_test = train_test_split(
         x_train_pca, y_train, test_size=0.1, stratify=y_train, random_state=42
     )
-    
+
     # Create a 2d TrainingData object
     train_data = TrainingData2dI(x_train_pca, y_train, x_test_pca, y_test)
 
@@ -238,7 +244,7 @@ def train_evaluate_model(
     # Train the model
     if verbose:
         print("Training model")
-    model.train(train_data, epochs, callbacksList, progBar=False)
+        model.train(train_data, epochs, callbacksList, progBar=False)
 
     training_logs = pd.read_csv(logs_filename)
 
