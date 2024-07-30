@@ -1,5 +1,9 @@
 # Zoidberg
 
+- [Quick Start](#quick-start)
+- [Project Structure](#project-structure)
+  
+
 ## Quick Start
 
 Create a python virtual environment :
@@ -37,3 +41,11 @@ Install `setuptools`
 ```bash
 python3 -m pip install -U pip setuptools
 ```
+
+## Project structure 
+
+The main entrypoint to the project is : `main.ipynb` 
+
+However the second iteration (an improvement from `main.ipynb` is `revised_main.ipynb`.
+
+If you're interested in the preprocessing steps these will be in the `/src` folder. 
