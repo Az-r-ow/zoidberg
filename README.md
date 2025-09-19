@@ -1,4 +1,4 @@
-# Zoidberg
+# Pneumonia Detection
 
 - [Quick Start](#quick-start)
 - [Project Structure](#project-structure)
